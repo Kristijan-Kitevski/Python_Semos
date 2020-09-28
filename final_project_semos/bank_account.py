@@ -171,26 +171,9 @@ class Account():
         currency_in = Account.add_currency()
    
         acc= Account( type_of_account_in, balance_in, currency_in)
+        # print(acc.__dict__)
         Operations_with_db.add_account_to_db(acc)
      
-    #extra logic for working with account funds not implementet anywhere
-    def withdraw(self):
-        ammount = int(input("Enter ammount to withdraw: "))
-        if self.account_balance > ammount:
-            self.account_balance -= ammount
-            print("Remaining funds are: {}".format(self.account_balance))
-        else:
-            print("Not enough funds on your account")
-            self.withdraw()
-        
-    def deposit(self):
-        ammount = int(input("Enter ammount to deposit: "))
-        if ammount>0:
-            self.account_balance += ammount
-            print("Remaining funds are: {}".format(self.account_balance))
-        else:
-            print("Please enter valid deposit")
-            self.deposit()
 
 # ---------------------------------------------------------------------
 # functions for db-main menu
@@ -243,8 +226,7 @@ class Operations_with_db():
         try:
             connection = sqlite3.connect(database_name+".db")
             cursor = connection.cursor()
-            
-            cursor.execute('SELECT client_id FROM client WHERE (UMCN =={})'.format(UMCN_in))
+            cursor.execute('SELECT client_id FROM client WHERE UMCN ==?',(UMCN_in,))
             clientID= cursor.fetchone()  
             sql_insert_account = '''
                 INSERT into 'account' (
@@ -252,8 +234,8 @@ class Operations_with_db():
                 )
                 values(?,?,?,?,?,?);
             '''
-            tuple_of_data = (Account.name, Account.acc_number, Account.creation_date, Account.currency, Account.account_balance,clientID[0],)
-                
+            tuple_of_data = (Account.name, Account.acc_number, Account.creation_date, Account.currency, Account.account_balance, clientID[0],)
+            
             cursor.execute(sql_insert_account, tuple_of_data)
             connection.commit()
             print('New account added successfully')
@@ -271,39 +253,51 @@ class Operations_with_db():
         picked_client = cursor.fetchone()  
         client_id=picked_client[0] 
         print(client_id)
-        cursor.execute('SELECT * FROM account WHERE ClientAccounts=?',(client_id,))
+        cursor.execute('SELECT account_name, number, date_created, currency, funds FROM account WHERE ClientAccounts=?',(client_id,))
         results = cursor.fetchall()
         if results:
             print("Client Accounts")
-            for row in results:
-                print("Name: {}     Acount number: {}       Funds:{} {}".format(row[1], row[2],row[4],row[5] ))  
+            from tabulate import tabulate
+            
+            print (tabulate(results, headers=["Account", "Nnumber", "Date Created", "Currency","Funds"]))  
                 
             acc_n = input("Enter account number to edit: ")
             to_edit= input('''Choose what would you like to edit:
                         1. Account name
                         2. Account currency
                         3. Delete account
+                        4. Account Value
                         b. Back
                         ''')
             
-            if to_edit == "1":#logika sto ke ja povika pak funkcijata za accounti
+            if to_edit == "1": 
                 accname = Account.add_account_name()
                 cursor.execute(('''UPDATE account
                             SET Account_name = ?
                             WHERE Number = ? '''),(accname, acc_n,))
                 print("Name changed!")
                 
-            if to_edit == "2":
+            elif to_edit == "2":
                 acccur =Account.add_currency()
                 cursor.execute(('''UPDATE account
                             SET Currency = ?
                             WHERE Number= ?'''),(acccur, acc_n,))
                 print("Currency changed!")
                 
-            if to_edit == "3":
+            elif to_edit == "3":
                 cursor.execute(('''DELETE FROM account
                         WHERE Number= ? '''),(acc_n,))
                 print("Account deleted!")
+                
+            elif to_edit == "4":
+                new_funds=input("Enter new funds:")
+                if new_funds.isdigit():
+                    cursor.execute(('''UPDATE account
+                                SET funds = ?
+                                WHERE Number= ?'''),(new_funds, acc_n,))
+                else:
+                    print("Enter walid number")
+                    
             elif to_edit == "b":
                 Operations_with_db.edit_client()
         else:
@@ -321,7 +315,7 @@ class Operations_with_db():
         try: 
             connection = sqlite3.connect(database_name+".db")
             cursor = connection.cursor()        
-            cursor.execute('SELECT Name, Surname from client WHERE (UMCN= {})'.format(client_umcn)) 
+            cursor.execute('SELECT Name, Surname from client WHERE UMCN= ?',(client_umcn,)) 
             picked_client = cursor.fetchone()  
             firstname=picked_client[0]
             
@@ -404,7 +398,7 @@ class Operations_with_db():
         cursor = connection.cursor()
                 
         try:            
-            cursor.execute('SELECT Name, Surname from client WHERE (UMCN= {})'.format(client_umcn)) 
+            cursor.execute('SELECT Name, Surname from client WHERE UMCN= ?',(client_umcn,)) 
             picked_client = cursor.fetchone()  
             firstname=picked_client[0]
             lastname=picked_client[1]    
@@ -420,8 +414,7 @@ class Operations_with_db():
                 picked_client = cursor.fetchone()  
                 client_id=picked_client[0] 
                 cursor.execute('DELETE FROM account WHERE ClientAccounts=?',(client_id,))           
-                client_to_delete = 'DELETE from client WHERE (UMCN= {})'.format(client_umcn) 
-                cursor.execute(client_to_delete)
+                cursor.execute('DELETE from client WHERE UMCN=?',(client_umcn,))
                 connection.commit()
                 print("Client deleted successfully!")
         else:
@@ -479,23 +472,30 @@ class Operations_with_db():
                     print("Invalid account number")
                     Operations_with_db.search_client()
             if results:
+               
                 for row in results:
+                    print()
+                    print("Client: ")
                     print("Name: ", row[1])
                     print("Surname: ", row[2])
                     print("UMCN: ", row[3])
                     print("Birthdate: ", row[4])
                     print("Date Created: ", row[5])
                     print("Address: ", row[6])
+                    print()
+                    print("Client Accounts: ")
+                    print()
+                    break
+                for row in results:
                     print("Account name: ", row[8])
                     print("Account number: ", row[9])
                     print("Date Created: ", row[10])
                     print("Funds: ", row[12])
                     print("Currency: ", row[11])
-                    print("\n")
+                    print()
             else:
                 print("Client doesent exist in records")
             
-            connection.commit()
         except Error as e:
             print(e)
         finally:
@@ -562,14 +562,7 @@ class Operations_with_db():
             if connection:
                 connection.close()   
             
-           
-                
-   
-   
-                                    
-                
-                
-                
+                    
 class Menu():
     
     def __init__(self):
