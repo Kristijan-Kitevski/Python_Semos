@@ -120,8 +120,9 @@ class Account():
                 1. Current Accounts    
                 2. Term Deposits   
                 3. Savings Accounts
-                4. Loan            
-                                   ''')
+                4. Loan    
+                b. Back        
+                                   ''').lower()
             if account_choice=="1":
                 type_of_account_in= "Current Accounts"
                 break
@@ -134,6 +135,8 @@ class Account():
             if account_choice=="4":
                 type_of_account_in= "Loan"  
                 break 
+            if account_choice=="b": 
+                Menu.main_menu()
             else:
                 print("Enter valid choice (ex. 1)!")
         return type_of_account_in    
@@ -261,7 +264,7 @@ class Operations_with_db():
             
             print (tabulate(results, headers=["Account", "Nnumber", "Date Created", "Currency","Funds"]))  
                 
-            acc_n = input("Enter account number to edit: ")
+            acc_n = input("Enter account number to edit: ").lower()
             to_edit= input('''Choose what would you like to edit:
                         1. Account name
                         2. Account currency
@@ -296,13 +299,13 @@ class Operations_with_db():
                                 SET funds = ?
                                 WHERE Number= ?'''),(new_funds, acc_n,))
                 else:
-                    print("Enter walid number")
+                    print("Enter valid number")
                     
             elif to_edit == "b":
                 Operations_with_db.edit_client()
         else:
             print("Client have no account/s")
-            c=input("Would you like to open financial account for this client? (y/n) ")
+            c=input("Would you like to open financial account for this client? (y/n) ").lower()
             if c=="y":
                 Account.add_new_account()
             else:
@@ -321,7 +324,7 @@ class Operations_with_db():
             
         except TypeError:
             print("No client with this UMCN") 
-            pick= input("Would you like to add one?(y/n) ")
+            pick= input("Would you like to add one?(y/n) ").lower()
             if pick=="y":
                 Client.add_client()
             else:    
@@ -341,7 +344,7 @@ class Operations_with_db():
                     6. Edit Accounts
                     q. Quit
                 ''')
-        pick=input("Enter number: ")
+        pick=input("Enter number: ").lower()
                     
         connection = sqlite3.connect(database_name+".db")
         cursor = connection.cursor()
@@ -408,7 +411,7 @@ class Operations_with_db():
             
         if picked_client:
             print("You have selected {} {}".format(firstname,lastname))
-            decide = input("Are you shure you want to delete your client {} {}? (y/n)".format(firstname,lastname))
+            decide = input("Are you shure you want to delete your client {} {}? (y/n)".format(firstname,lastname)).lower()
             if decide=="y":
                 cursor.execute('SELECT client_id FROM client WHERE UMCN = ?',(client_umcn,))
                 picked_client = cursor.fetchone()  
@@ -582,7 +585,7 @@ class Menu():
         Type "q" to quit the program of "h" for help.
                 
                 """)
-            choise = input("Please select one of the options above: ")
+            choise = input("Please select one of the options above: ").lower()
             
             return choise
         
@@ -603,41 +606,42 @@ class Menu():
             print(decor1)
             if choise == "1":
                 Client.add_client()
-                c=input("Would you like to open financial account for this client? (y/n) ")
+                c=input("Would you like to open financial account for this client? (y/n) ").lower()
                 if c=="y":
                     Account.add_new_account()
                 else:
                     pass
                 Menu.finish_line()
                 
-            if choise == "2":
+            elif choise == "2":
                 Operations_with_db.edit_client()
                 Menu.finish_line()
                 
-            if choise == "3":
+            elif choise == "3":
                 Account.add_new_account()
                 Menu.finish_line()
                 
-            if choise == "4":  
+            elif choise == "4":  
                 Operations_with_db.list_all_clients()
                 Menu.finish_line()
             
-            if choise == "5":
+            elif choise == "5":
                 Operations_with_db.search_client()
                 Menu.finish_line()
             
-            if choise == "6":    
+            elif choise == "6":    
                 Operations_with_db.delete_client()
                 Menu.finish_line()
                 
-            if choise == "h":
+            elif choise == "h":
                 with open ("help.txt") as help:
                     f = help.read()
                     print(f)
                 Menu.finish_line()
                 
-            if choise =="q":
-                break
+            elif choise =="q":
+                import sys
+                sys.exit(0)
 # ---------------------------------------------------------------------
 # main program menu
 # in case you like to change name of db
