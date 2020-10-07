@@ -77,7 +77,7 @@ class Client():
     @staticmethod
     def check_if_valid_string_input(variable_name):
         while True:
-            input_str= input(f"Please enter your {variable_name}: ").capitalize()
+            input_str= input(f"Please enter client {variable_name}: ").capitalize()
             if input_str.isalpha():
                 return input_str
             else:
@@ -90,7 +90,7 @@ class Client():
         last_name_in = Client.check_if_valid_string_input("surname")  
         UMCN_in=Client.check_umcn()
         birthdate_in= Client.get_birthdate_from_umcn(UMCN_in)
-        address_in = input("Please enter your address: ").capitalize()
+        address_in = input("Please enter client address: ").capitalize()
         
         client= Client(first_name_in,last_name_in,UMCN_in,birthdate_in,address_in)    
         Operations_with_db.add_client_to_db(client)
@@ -183,9 +183,6 @@ class Account():
 
 class Operations_with_db():
 
-    def __init_(self):
-        return self
-
     @staticmethod
     def add_client_to_db(Client):
         # check if user is in database before inserting new user with same data 
@@ -242,7 +239,10 @@ class Operations_with_db():
             cursor.execute(sql_insert_account, tuple_of_data)
             connection.commit()
             print('New account added successfully')
+        except TypeError:
+            print("Client that you trying to open account doesn't exist")
         except Error as e:
+            
             print(e)
         finally:
             if connection:
@@ -474,6 +474,10 @@ class Operations_with_db():
                 else:
                     print("Invalid account number")
                     Operations_with_db.search_client()
+            else: 
+                print("Invalid input")
+                Operations_with_db.search_client()
+                
             if results:
                
                 for row in results:
@@ -551,7 +555,7 @@ class Operations_with_db():
                             return
                     else:
                         cursor.close()
-                        print("End of data")
+                        print("End of data no more clients in database")
                 except sqlite3.Error as error:
                     print("Failed to read data from table", error)
                 finally:
@@ -567,9 +571,6 @@ class Operations_with_db():
             
                     
 class Menu():
-    
-    def __init__(self):
-        return 
     
     @staticmethod 
     def main_menu_text():
