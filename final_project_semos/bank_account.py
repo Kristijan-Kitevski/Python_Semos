@@ -414,9 +414,11 @@ class Operations_with_db():
             decide = input("Are you shure you want to delete your client {} {}? (y/n)".format(firstname,lastname)).lower()
             if decide=="y":
                 cursor.execute('SELECT client_id FROM client WHERE UMCN = ?',(client_umcn,))
+               
                 picked_client = cursor.fetchone()  
                 client_id=picked_client[0] 
-                cursor.execute('DELETE FROM account WHERE ClientAccounts=?',(client_id,))           
+                if client_id:                
+                    cursor.execute('DELETE FROM account WHERE ClientAccounts=?',(client_id,))           
                 cursor.execute('DELETE from client WHERE UMCN=?',(client_umcn,))
                 connection.commit()
                 print("Client deleted successfully!")
@@ -438,6 +440,7 @@ class Operations_with_db():
                 umcn = Client.check_umcn()
                 connection = sqlite3.connect(database_name+".db")
                 cursor = connection.cursor()
+           
                 cursor.execute('''
                                 SELECT *
                                 FROM  client
@@ -447,30 +450,41 @@ class Operations_with_db():
                                 ORDER by client.Surname        
                     ''',(umcn,)) 
                 results =cursor.fetchall()
+                if not results:
+                    cursor.execute('''
+                                    SELECT *
+                                    FROM  client
+                                    WHERE client.UMCN=?
+                                    ORDER by client.Surname        
+                        ''',(umcn,)) 
+                    results =cursor.fetchall()
             elif inp == "2":
                 account_number=input("Enter account umber: ")
                 if account_number.isdigit() and len(account_number)==8:
                     connection = sqlite3.connect(database_name+".db")
                     cursor = connection.cursor()
-                    
-                    cursor.execute('''
-                                    SELECT client.client_id
+                    try:
+                        cursor.execute('''
+                                        SELECT client.client_id
+                                        FROM  client
+                                        INNER JOIN account
+                                        ON client.client_id = account.clientaccounts 
+                                        WHERE account.number=?     
+                            ''',(account_number,)) 
+                        
+                        r1= cursor.fetchone()
+                        cursor.execute('''
+                                    SELECT *
                                     FROM  client
                                     INNER JOIN account
                                     ON client.client_id = account.clientaccounts 
-                                    WHERE account.number=?     
-                        ''',(account_number,)) 
-                    
-                    r1= cursor.fetchone()
-                    cursor.execute('''
-                                SELECT *
-                                FROM  client
-                                INNER JOIN account
-                                ON client.client_id = account.clientaccounts 
-                                WHERE client.client_id=?
-                                ORDER by client.Surname        
-                    ''',r1) 
-                    results =cursor.fetchall()
+                                    WHERE client.client_id=?
+                                    ORDER by client.Surname        
+                        ''',r1) 
+                        results =cursor.fetchall()
+                    except ValueError:
+                        print ("Account doesn't exist or")
+                        results = False
                 else:
                     print("Invalid account number")
                     Operations_with_db.search_client()
@@ -493,13 +507,17 @@ class Operations_with_db():
                     print("Client Accounts: ")
                     print()
                     break
-                for row in results:
-                    print("Account name: ", row[8])
-                    print("Account number: ", row[9])
-                    print("Date Created: ", row[10])
-                    print("Funds: ", row[12])
-                    print("Currency: ", row[11])
-                    print()
+                try:
+                    if row[8]:
+                        for row in results:
+                            print("Account name: ", row[8])
+                            print("Account number: ", row[9])
+                            print("Date Created: ", row[10])
+                            print("Funds: ", row[12])
+                            print("Currency: ", row[11])
+                            print()
+                except IndexError:
+                    print("No accounts")
             else:
                 print("Client doesent exist in records")
             
